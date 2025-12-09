@@ -9,11 +9,39 @@ import (
 	"go.i3wm.org/i3/v4"
 )
 
+// I3Client abstracts i3 IPC operations for testability
+type I3Client interface {
+	GetVersion() (i3.Version, error)
+	GetTree() (i3.Tree, error)
+	GetWorkspaces() ([]i3.Workspace, error)
+	RunCommand(command string) ([]i3.CommandResult, error)
+}
+
+// defaultI3Client wraps the real i3 package
+type defaultI3Client struct{}
+
+func (c *defaultI3Client) GetVersion() (i3.Version, error) {
+	return i3.GetVersion()
+}
+
+func (c *defaultI3Client) GetTree() (i3.Tree, error) {
+	return i3.GetTree()
+}
+
+func (c *defaultI3Client) GetWorkspaces() ([]i3.Workspace, error) {
+	return i3.GetWorkspaces()
+}
+
+func (c *defaultI3Client) RunCommand(command string) ([]i3.CommandResult, error) {
+	return i3.RunCommand(command)
+}
+
 // i3MCPServer implements the MCP server for i3 window manager
 type i3MCPServer struct {
 	// mcp.Server implements the basic MCP server functionality
 	// and allows us to register operations and handle client connections
 	*mcp.Server
+	i3client I3Client
 }
 
 // WorkspacesOut represents the output of GetWorkspaces
@@ -59,10 +87,14 @@ type RunCommandOut struct {
 	Results []CommandResult `json:"results"`
 }
 
-// New creates a new i3MCPServer
-func New() (*i3MCPServer, error) {
+// New creates a new i3MCPServer. If client is nil, uses the real i3 IPC.
+func New(client I3Client) (*i3MCPServer, error) {
+	if client == nil {
+		client = &defaultI3Client{}
+	}
+
 	// Check the version to find problems early
-	_, err := i3.GetVersion()
+	_, err := client.GetVersion()
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +104,8 @@ func New() (*i3MCPServer, error) {
 
 	// Create the server instance
 	srv := &i3MCPServer{
-		Server: server,
+		Server:   server,
+		i3client: client,
 	}
 
 	// Register the supported operations
@@ -103,7 +136,7 @@ func New() (*i3MCPServer, error) {
 // getTree returns the i3 layout tree
 func (s *i3MCPServer) getTree(_ context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, any, error) {
 	// Request the tree structure from the i3 window manager
-	tree, err := i3.GetTree()
+	tree, err := s.i3client.GetTree()
 	if err != nil {
 		return nil, i3.Tree{}, err
 	}
@@ -114,7 +147,7 @@ func (s *i3MCPServer) getTree(_ context.Context, _ *mcp.CallToolRequest, _ struc
 // getWorkspaces returns details about i3's current workspaces
 func (s *i3MCPServer) getWorkspaces(_ context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, WorkspacesOut, error) {
 	// Request the workspace information from the i3 window manager
-	workspaces, err := i3.GetWorkspaces()
+	workspaces, err := s.i3client.GetWorkspaces()
 	if err != nil {
 		return nil, WorkspacesOut{}, err
 	}
@@ -124,7 +157,7 @@ func (s *i3MCPServer) getWorkspaces(_ context.Context, _ *mcp.CallToolRequest, _
 
 // findWindows searches for windows matching the given criteria
 func (s *i3MCPServer) findWindows(_ context.Context, _ *mcp.CallToolRequest, in FindWindowsIn) (*mcp.CallToolResult, FindWindowsOut, error) {
-	tree, err := i3.GetTree()
+	tree, err := s.i3client.GetTree()
 	if err != nil {
 		return nil, FindWindowsOut{}, err
 	}
@@ -192,7 +225,7 @@ func containsIgnoreCase(s, substr string) bool {
 
 // runCommand executes an i3 command
 func (s *i3MCPServer) runCommand(_ context.Context, _ *mcp.CallToolRequest, in RunCommandIn) (*mcp.CallToolResult, RunCommandOut, error) {
-	results, err := i3.RunCommand(in.Command)
+	results, err := s.i3client.RunCommand(in.Command)
 	if err != nil {
 		return nil, RunCommandOut{}, err
 	}
@@ -222,7 +255,7 @@ func (s *i3MCPServer) Close() error {
 
 func main() {
 	// Create a new i3 MCP server
-	srv, err := New()
+	srv, err := New(nil)
 	if err != nil {
 		log.Fatalf("Failed to create i3 MCP server: %v", err)
 	}
