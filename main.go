@@ -16,59 +16,7 @@ type i3MCPServer struct {
 	*mcp.Server
 }
 
-// New creates a new i3MCPServer
-func New() (*i3MCPServer, error) {
-	// Check the version to find problems early
-	_, err := i3.GetVersion()
-
-	if err != nil {
-		return nil, err
-	}
-
-	// Create a new MCP server
-	server := mcp.NewServer(&mcp.Implementation{Name: "i3"}, nil)
-
-	// Create the server instance
-	srv := &i3MCPServer{
-		Server: server,
-	}
-
-	// Register the supported operations
-	// This will make them available to MCP clients
-	mcp.AddTool(server, &mcp.Tool{
-		Description: "gets the i3 layout tree",
-		Name:        "GetTree",
-	}, srv.getTree)
-
-	mcp.AddTool(server, &mcp.Tool{
-		Description: "gets the details about i3's current workspaces",
-		Name:        "GetWorkspaces",
-	}, srv.getWorkspaces)
-
-	mcp.AddTool(server, &mcp.Tool{
-		Description: "searches for windows matching the given criteria (name, class, or instance). Returns matching windows with their con_id which can be used with RunCommand.",
-		Name:        "FindWindows",
-	}, srv.findWindows)
-
-	mcp.AddTool(server, &mcp.Tool{
-		Description: "executes an i3 command. Use i3 command syntax, e.g. '[con_id=123] move to workspace 7' or '[class=\"firefox\"] focus'. See https://i3wm.org/docs/userguide.html#command_criteria for criteria syntax.",
-		Name:        "RunCommand",
-	}, srv.runCommand)
-
-	return srv, nil
-}
-
-// getTree returns the i3 layout tree
-func (s *i3MCPServer) getTree(ctx context.Context, request *mcp.CallToolRequest, in struct{}) (*mcp.CallToolResult, any, error) {
-	// Request the tree structure from the i3 window manager
-	tree, err := i3.GetTree()
-	if err != nil {
-		return nil, i3.Tree{}, err
-	}
-
-	return nil, tree, nil
-}
-
+// WorkspacesOut represents the output of GetWorkspaces
 type WorkspacesOut struct {
 	Workspaces []i3.Workspace `json:"workspaces"`
 }
@@ -111,8 +59,60 @@ type RunCommandOut struct {
 	Results []CommandResult `json:"results"`
 }
 
+// New creates a new i3MCPServer
+func New() (*i3MCPServer, error) {
+	// Check the version to find problems early
+	_, err := i3.GetVersion()
+	if err != nil {
+		return nil, err
+	}
+
+	// Create a new MCP server
+	server := mcp.NewServer(&mcp.Implementation{Name: "i3"}, nil)
+
+	// Create the server instance
+	srv := &i3MCPServer{
+		Server: server,
+	}
+
+	// Register the supported operations
+	// This will make them available to MCP clients
+	mcp.AddTool(server, &mcp.Tool{
+		Description: "gets the i3 layout tree",
+		Name:        "GetTree",
+	}, srv.getTree)
+
+	mcp.AddTool(server, &mcp.Tool{
+		Description: "gets the details about i3's current workspaces",
+		Name:        "GetWorkspaces",
+	}, srv.getWorkspaces)
+
+	mcp.AddTool(server, &mcp.Tool{
+		Description: "searches for windows matching the given criteria (name, class, or instance). Returns matching windows with their con_id which can be used with RunCommand.",
+		Name:        "FindWindows",
+	}, srv.findWindows)
+
+	mcp.AddTool(server, &mcp.Tool{
+		Description: "executes an i3 command. Use i3 command syntax, e.g. '[con_id=123] move to workspace 7' or '[class=\"firefox\"] focus'. See https://i3wm.org/docs/userguide.html#command_criteria for criteria syntax.",
+		Name:        "RunCommand",
+	}, srv.runCommand)
+
+	return srv, nil
+}
+
+// getTree returns the i3 layout tree
+func (s *i3MCPServer) getTree(_ context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, any, error) {
+	// Request the tree structure from the i3 window manager
+	tree, err := i3.GetTree()
+	if err != nil {
+		return nil, i3.Tree{}, err
+	}
+
+	return nil, tree, nil
+}
+
 // getWorkspaces returns details about i3's current workspaces
-func (s *i3MCPServer) getWorkspaces(ctx context.Context, request *mcp.CallToolRequest, in struct{}) (*mcp.CallToolResult, WorkspacesOut, error) {
+func (s *i3MCPServer) getWorkspaces(_ context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, WorkspacesOut, error) {
 	// Request the workspace information from the i3 window manager
 	workspaces, err := i3.GetWorkspaces()
 	if err != nil {
@@ -123,7 +123,7 @@ func (s *i3MCPServer) getWorkspaces(ctx context.Context, request *mcp.CallToolRe
 }
 
 // findWindows searches for windows matching the given criteria
-func (s *i3MCPServer) findWindows(ctx context.Context, request *mcp.CallToolRequest, in FindWindowsIn) (*mcp.CallToolResult, FindWindowsOut, error) {
+func (s *i3MCPServer) findWindows(_ context.Context, _ *mcp.CallToolRequest, in FindWindowsIn) (*mcp.CallToolResult, FindWindowsOut, error) {
 	tree, err := i3.GetTree()
 	if err != nil {
 		return nil, FindWindowsOut{}, err
@@ -191,19 +191,15 @@ func containsIgnoreCase(s, substr string) bool {
 }
 
 // runCommand executes an i3 command
-func (s *i3MCPServer) runCommand(ctx context.Context, request *mcp.CallToolRequest, in RunCommandIn) (*mcp.CallToolResult, RunCommandOut, error) {
+func (s *i3MCPServer) runCommand(_ context.Context, _ *mcp.CallToolRequest, in RunCommandIn) (*mcp.CallToolResult, RunCommandOut, error) {
 	results, err := i3.RunCommand(in.Command)
 	if err != nil {
 		return nil, RunCommandOut{}, err
 	}
 
-	var cmdResults []CommandResult
+	cmdResults := make([]CommandResult, 0, len(results))
 	for _, r := range results {
-		cr := CommandResult{Success: r.Success}
-		if r.Error != "" {
-			cr.Error = r.Error
-		}
-		cmdResults = append(cmdResults, cr)
+		cmdResults = append(cmdResults, CommandResult{Success: r.Success, Error: r.Error})
 	}
 
 	return nil, RunCommandOut{Results: cmdResults}, nil
@@ -219,12 +215,11 @@ func (s *i3MCPServer) Run(ctx context.Context, t mcp.Transport) error {
 	return s.Server.Run(ctx, t)
 }
 
-// Close does nothing
+// Close cleans up server resources.
 func (s *i3MCPServer) Close() error {
 	return nil
 }
 
-// main function to start the server
 func main() {
 	// Create a new i3 MCP server
 	srv, err := New()
