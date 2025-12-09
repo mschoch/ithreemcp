@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"testing"
 
 	"go.i3wm.org/i3/v4"
@@ -69,7 +70,7 @@ func TestFindWindowsByClass(t *testing.T) {
 
 	srv := newTestServer(mock)
 
-	_, out, err := srv.findWindows(nil, nil, FindWindowsIn{
+	_, out, err := srv.findWindows(context.TODO(), nil, FindWindowsIn{
 		Class: "firefox",
 	})
 	if err != nil {
@@ -120,7 +121,7 @@ func TestFindWindowsByName(t *testing.T) {
 	srv := newTestServer(mock)
 
 	// Case-insensitive search
-	_, out, err := srv.findWindows(nil, nil, FindWindowsIn{
+	_, out, err := srv.findWindows(context.TODO(), nil, FindWindowsIn{
 		Name: "terminal",
 	})
 	if err != nil {
@@ -168,7 +169,7 @@ func TestFindWindowsNoCriteria(t *testing.T) {
 	srv := newTestServer(mock)
 
 	// No criteria returns all windows
-	_, out, err := srv.findWindows(nil, nil, FindWindowsIn{})
+	_, out, err := srv.findWindows(context.TODO(), nil, FindWindowsIn{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -225,7 +226,7 @@ func TestFindWindowsNestedTree(t *testing.T) {
 
 	srv := newTestServer(mock)
 
-	_, out, err := srv.findWindows(nil, nil, FindWindowsIn{
+	_, out, err := srv.findWindows(context.TODO(), nil, FindWindowsIn{
 		Class: "Code",
 	})
 	if err != nil {
@@ -250,7 +251,7 @@ func TestGetWorkspaces(t *testing.T) {
 
 	srv := newTestServer(mock)
 
-	_, out, err := srv.getWorkspaces(nil, nil, struct{}{})
+	_, out, err := srv.getWorkspaces(context.TODO(), nil, struct{}{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -272,7 +273,7 @@ func TestRunCommand(t *testing.T) {
 
 	srv := newTestServer(mock)
 
-	_, out, err := srv.runCommand(nil, nil, RunCommandIn{
+	_, out, err := srv.runCommand(context.TODO(), nil, RunCommandIn{
 		Command: "[con_id=123] focus",
 	})
 	if err != nil {
@@ -296,7 +297,7 @@ func TestRunCommandError(t *testing.T) {
 
 	srv := newTestServer(mock)
 
-	_, out, err := srv.runCommand(nil, nil, RunCommandIn{
+	_, out, err := srv.runCommand(context.TODO(), nil, RunCommandIn{
 		Command: "[con_id=999] focus",
 	})
 	if err != nil {
