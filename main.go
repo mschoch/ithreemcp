@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"go.i3wm.org/i3/v4"
@@ -44,6 +45,16 @@ func New() (*i3MCPServer, error) {
 		Name:        "GetWorkspaces",
 	}, srv.getWorkspaces)
 
+	mcp.AddTool(server, &mcp.Tool{
+		Description: "searches for windows matching the given criteria (name, class, or instance). Returns matching windows with their con_id which can be used with RunCommand.",
+		Name:        "FindWindows",
+	}, srv.findWindows)
+
+	mcp.AddTool(server, &mcp.Tool{
+		Description: "executes an i3 command. Use i3 command syntax, e.g. '[con_id=123] move to workspace 7' or '[class=\"firefox\"] focus'. See https://i3wm.org/docs/userguide.html#command_criteria for criteria syntax.",
+		Name:        "RunCommand",
+	}, srv.runCommand)
+
 	return srv, nil
 }
 
@@ -59,7 +70,45 @@ func (s *i3MCPServer) getTree(ctx context.Context, request *mcp.CallToolRequest,
 }
 
 type WorkspacesOut struct {
-	workspaces []i3.Workspace
+	Workspaces []i3.Workspace `json:"workspaces"`
+}
+
+// FindWindowsIn represents the input parameters for FindWindows
+type FindWindowsIn struct {
+	Name     string `json:"name,omitempty" jsonschema:"description=Match window title (case-insensitive substring match)"`
+	Class    string `json:"class,omitempty" jsonschema:"description=Match window class (e.g. firefox, Alacritty)"`
+	Instance string `json:"instance,omitempty" jsonschema:"description=Match window instance"`
+}
+
+// WindowInfo represents a found window with relevant details
+type WindowInfo struct {
+	ConID     i3.NodeID `json:"con_id"`
+	Name      string    `json:"name"`
+	Class     string    `json:"class"`
+	Instance  string    `json:"instance"`
+	Workspace string    `json:"workspace"`
+	Focused   bool      `json:"focused"`
+}
+
+// FindWindowsOut represents the output of FindWindows
+type FindWindowsOut struct {
+	Windows []WindowInfo `json:"windows"`
+}
+
+// RunCommandIn represents the input parameters for RunCommand
+type RunCommandIn struct {
+	Command string `json:"command" jsonschema:"description=The i3 command to execute,required"`
+}
+
+// CommandResult represents the result of a single command
+type CommandResult struct {
+	Success bool   `json:"success"`
+	Error   string `json:"error,omitempty"`
+}
+
+// RunCommandOut represents the output of RunCommand
+type RunCommandOut struct {
+	Results []CommandResult `json:"results"`
 }
 
 // getWorkspaces returns details about i3's current workspaces
@@ -70,7 +119,94 @@ func (s *i3MCPServer) getWorkspaces(ctx context.Context, request *mcp.CallToolRe
 		return nil, WorkspacesOut{}, err
 	}
 
-	return nil, WorkspacesOut{workspaces: workspaces}, nil
+	return nil, WorkspacesOut{Workspaces: workspaces}, nil
+}
+
+// findWindows searches for windows matching the given criteria
+func (s *i3MCPServer) findWindows(ctx context.Context, request *mcp.CallToolRequest, in FindWindowsIn) (*mcp.CallToolResult, FindWindowsOut, error) {
+	tree, err := i3.GetTree()
+	if err != nil {
+		return nil, FindWindowsOut{}, err
+	}
+
+	var windows []WindowInfo
+	findWindowsRecursive(tree.Root, "", in, &windows)
+
+	return nil, FindWindowsOut{Windows: windows}, nil
+}
+
+// findWindowsRecursive traverses the tree to find matching windows
+func findWindowsRecursive(node *i3.Node, workspace string, criteria FindWindowsIn, results *[]WindowInfo) {
+	if node == nil {
+		return
+	}
+
+	// Track current workspace name
+	currentWorkspace := workspace
+	if node.Type == i3.WorkspaceNode {
+		currentWorkspace = node.Name
+	}
+
+	// Check if this is a window (con with X11 window ID)
+	if node.Window != 0 {
+		props := node.WindowProperties
+
+		// Check if window matches criteria
+		matches := true
+
+		if criteria.Name != "" && !containsIgnoreCase(node.Name, criteria.Name) {
+			matches = false
+		}
+		if criteria.Class != "" && !containsIgnoreCase(props.Class, criteria.Class) {
+			matches = false
+		}
+		if criteria.Instance != "" && !containsIgnoreCase(props.Instance, criteria.Instance) {
+			matches = false
+		}
+
+		if matches {
+			*results = append(*results, WindowInfo{
+				ConID:     node.ID,
+				Name:      node.Name,
+				Class:     props.Class,
+				Instance:  props.Instance,
+				Workspace: currentWorkspace,
+				Focused:   node.Focused,
+			})
+		}
+	}
+
+	// Recurse into children
+	for _, child := range node.Nodes {
+		findWindowsRecursive(child, currentWorkspace, criteria, results)
+	}
+	for _, child := range node.FloatingNodes {
+		findWindowsRecursive(child, currentWorkspace, criteria, results)
+	}
+}
+
+// containsIgnoreCase checks if s contains substr (case-insensitive)
+func containsIgnoreCase(s, substr string) bool {
+	return strings.Contains(strings.ToLower(s), strings.ToLower(substr))
+}
+
+// runCommand executes an i3 command
+func (s *i3MCPServer) runCommand(ctx context.Context, request *mcp.CallToolRequest, in RunCommandIn) (*mcp.CallToolResult, RunCommandOut, error) {
+	results, err := i3.RunCommand(in.Command)
+	if err != nil {
+		return nil, RunCommandOut{}, err
+	}
+
+	var cmdResults []CommandResult
+	for _, r := range results {
+		cr := CommandResult{Success: r.Success}
+		if r.Error != "" {
+			cr.Error = r.Error
+		}
+		cmdResults = append(cmdResults, cr)
+	}
+
+	return nil, RunCommandOut{Results: cmdResults}, nil
 }
 
 // Run starts the MCP server

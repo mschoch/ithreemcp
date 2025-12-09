@@ -20,7 +20,101 @@ The ithreemcp program uses the [go-i3](go.i3wm.org/i3/v4) library to communicate
 
 ## Supported Operations
 
-Currently only two operations are supported:
+### GetTree
+Returns the i3 layout tree, using the exact format returned by the underlying operation.
 
-- GetTree - returns the i3 layout tree, using the exact format returned by the underlying operation
-- GetWorkspaces - returns details about i3's current workspaces
+### GetWorkspaces
+Returns details about i3's current workspaces.
+
+### FindWindows
+Searches for windows matching the given criteria. Returns matching windows with their `con_id`, which can be used with `RunCommand`.
+
+**Parameters:**
+- `name` (optional) - Match window title (case-insensitive substring)
+- `class` (optional) - Match window class (e.g., "firefox", "Alacritty")
+- `instance` (optional) - Match window instance
+
+**Returns:** List of windows with `con_id`, `name`, `class`, `instance`, `workspace`, and `focused` status.
+
+### RunCommand
+Executes an i3 command. Use [i3 command syntax](https://i3wm.org/docs/userguide.html#command_criteria) for criteria and actions.
+
+**Parameters:**
+- `command` (required) - The i3 command to execute
+
+**Returns:** Array of results with `success` status and optional `error` message.
+
+## Examples
+
+The `FindWindows` and `RunCommand` tools work together to enable powerful window management through natural language requests.
+
+### Move a window to another workspace
+
+**User:** "Move Firefox to workspace 7"
+
+1. `FindWindows(class: "firefox")` → finds the window and returns its `con_id`
+2. `RunCommand(command: "[con_id=94285673947] move to workspace 7")`
+
+### Focus a specific application
+
+**User:** "Switch to my terminal"
+
+1. `FindWindows(class: "Alacritty")` → returns matching terminals
+2. `RunCommand(command: "[con_id=94285673948] focus")`
+
+### Close all windows of an application
+
+**User:** "Close all my browser windows"
+
+1. `FindWindows(class: "firefox")` → returns all Firefox windows
+2. For each window: `RunCommand(command: "[con_id=...] kill")`
+
+### Move window to scratchpad
+
+**User:** "Hide Slack in the scratchpad"
+
+1. `FindWindows(class: "Slack")` → finds Slack window
+2. `RunCommand(command: "[con_id=94285673949] move scratchpad")`
+
+### Toggle floating mode
+
+**User:** "Make the video player float"
+
+1. `FindWindows(name: "VLC")` → finds VLC by window title
+2. `RunCommand(command: "[con_id=94285673950] floating toggle")`
+
+### Resize a window
+
+**User:** "Make my editor wider"
+
+1. `FindWindows(class: "code")` → finds VS Code
+2. `RunCommand(command: "[con_id=94285673951] resize grow width 200 px")`
+
+### Move window to a specific output/monitor
+
+**User:** "Move this to my external monitor"
+
+`RunCommand(command: "[focused] move to output HDMI-1")`
+
+### Fullscreen toggle
+
+**User:** "Fullscreen my browser"
+
+1. `FindWindows(class: "firefox")`
+2. `RunCommand(command: "[con_id=...] fullscreen toggle")`
+
+### Using i3 criteria directly
+
+For simple cases, `RunCommand` can use i3's built-in criteria without needing `FindWindows`:
+
+```
+RunCommand(command: "[class=\"firefox\"] move to workspace 7")
+RunCommand(command: "[urgent=latest] focus")
+RunCommand(command: "[workspace=3] move to workspace 5")
+```
+
+This is useful when targeting windows by class, but `FindWindows` is preferred when you need to:
+- Search by partial window title
+- Get information about which windows match before acting
+- Handle multiple matches individually
+- Confirm the target window with the user
