@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "i3": {
+      "command": "ithreemcp",
+      "env": {
+	    "DISPLAY": ":1"
+      }
+    }
+  }
+}
+
