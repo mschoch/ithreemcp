@@ -51,9 +51,9 @@ type WorkspacesOut struct {
 
 // FindWindowsIn represents the input parameters for FindWindows
 type FindWindowsIn struct {
-	Name     string `json:"name,omitempty" jsonschema:"description=Match window title (case-insensitive substring match)"`
-	Class    string `json:"class,omitempty" jsonschema:"description=Match window class (e.g. firefox, Alacritty)"`
-	Instance string `json:"instance,omitempty" jsonschema:"description=Match window instance"`
+	Name     string `json:"name,omitempty" jsonschema:"Match window title (case-insensitive substring match)"`
+	Class    string `json:"class,omitempty" jsonschema:"Match window class (e.g. firefox, Alacritty)"`
+	Instance string `json:"instance,omitempty" jsonschema:"Match window instance"`
 }
 
 // WindowInfo represents a found window with relevant details
@@ -73,7 +73,7 @@ type FindWindowsOut struct {
 
 // RunCommandIn represents the input parameters for RunCommand
 type RunCommandIn struct {
-	Command string `json:"command" jsonschema:"description=The i3 command to execute,required"`
+	Command string `json:"command" jsonschema:"The i3 command to execute,required"`
 }
 
 // CommandResult represents the result of a single command
