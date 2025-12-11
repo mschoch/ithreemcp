@@ -8,9 +8,35 @@ An MCP server exposing functionality of the connected i3 window manager.
 
 ## Running
 
-Prerequisite: You already have the i3 window manager running, and you have permission to access to the socket.
+**Prerequisites:** You need the i3 window manager running, with permission to access its socket.
 
+### Quick Start with ollmcp
+
+The easiest way to use ithreemcp is with [ollmcp](https://github.com/jonigl/mcp-client-for-ollama), an MCP client for Ollama.
+
+1. Copy the sample config and adjust for your environment:
+   ```bash
+   cp ithreemcp.json.sample ithreemcp.json
+   ```
+
+2. Edit `ithreemcp.json` to ensure the path to `ithreemcp` is correct and the `DISPLAY` environment variable matches your setup.
+
+3. Run ollmcp with your config:
+   ```bash
+   uvx ollmcp --servers-json ithreemcp.json
+   ```
+
+Now you can chat with Ollama and ask it to manage your i3 windows!
+
+### Running the Server Directly
+
+If you're integrating with a different MCP client, you can run the server directly:
+
+```bash
 ./ithreemcp
+```
+
+The server communicates over stdio using the MCP protocol.
 
 ## How it works
 
