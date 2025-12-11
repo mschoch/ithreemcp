@@ -31,11 +31,14 @@ func (m *mockI3Client) RunCommand(cmd string) ([]i3.CommandResult, error) {
 	return m.cmdResults, m.cmdErr
 }
 
-// newTestServer creates an i3MCPServer without registering MCP tools (avoids schema validation)
-func newTestServer(client I3Client) *i3MCPServer {
-	return &i3MCPServer{
-		i3client: client,
+// newTestServer creates an i3MCPServer using the public constructor
+func newTestServer(t *testing.T, client I3Client) *i3MCPServer {
+	t.Helper()
+	srv, err := NewServerWithClient(client)
+	if err != nil {
+		t.Fatalf("NewServerWithClient failed: %v", err)
 	}
+	return srv
 }
 
 func TestFindWindowsByClass(t *testing.T) {
@@ -68,7 +71,7 @@ func TestFindWindowsByClass(t *testing.T) {
 		},
 	}
 
-	srv := newTestServer(mock)
+	srv := newTestServer(t, mock)
 
 	_, out, err := srv.findWindows(context.TODO(), nil, FindWindowsIn{
 		Class: "firefox",
@@ -118,7 +121,7 @@ func TestFindWindowsByName(t *testing.T) {
 		},
 	}
 
-	srv := newTestServer(mock)
+	srv := newTestServer(t, mock)
 
 	// Case-insensitive search
 	_, out, err := srv.findWindows(context.TODO(), nil, FindWindowsIn{
@@ -166,7 +169,7 @@ func TestFindWindowsNoCriteria(t *testing.T) {
 		},
 	}
 
-	srv := newTestServer(mock)
+	srv := newTestServer(t, mock)
 
 	// No criteria returns all windows
 	_, out, err := srv.findWindows(context.TODO(), nil, FindWindowsIn{})
@@ -224,7 +227,7 @@ func TestFindWindowsNestedTree(t *testing.T) {
 		},
 	}
 
-	srv := newTestServer(mock)
+	srv := newTestServer(t, mock)
 
 	_, out, err := srv.findWindows(context.TODO(), nil, FindWindowsIn{
 		Class: "Code",
@@ -249,7 +252,7 @@ func TestGetWorkspaces(t *testing.T) {
 		},
 	}
 
-	srv := newTestServer(mock)
+	srv := newTestServer(t, mock)
 
 	_, out, err := srv.getWorkspaces(context.TODO(), nil, struct{}{})
 	if err != nil {
@@ -271,7 +274,7 @@ func TestRunCommand(t *testing.T) {
 		},
 	}
 
-	srv := newTestServer(mock)
+	srv := newTestServer(t, mock)
 
 	_, out, err := srv.runCommand(context.TODO(), nil, RunCommandIn{
 		Command: "[con_id=123] focus",
@@ -295,7 +298,7 @@ func TestRunCommandError(t *testing.T) {
 		},
 	}
 
-	srv := newTestServer(mock)
+	srv := newTestServer(t, mock)
 
 	_, out, err := srv.runCommand(context.TODO(), nil, RunCommandIn{
 		Command: "[con_id=999] focus",
