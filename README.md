@@ -2,6 +2,29 @@
 
 An MCP server exposing functionality of the connected i3 window manager.
 
+Control your i3 windows using natural language through AI assistants. Ask your LLM to move windows between workspaces, focus applications, toggle floating mode, and more.
+
+## Requirements
+
+- [i3 window manager](https://i3wm.org/) running with socket access
+- Go 1.25+ (for building from source)
+
+## Installation
+
+### From Source
+
+```bash
+go install github.com/mschoch/ithreemcp@latest
+```
+
+Or clone and build manually:
+
+```bash
+git clone https://github.com/mschoch/ithreemcp.git
+cd ithreemcp
+go build
+```
+
 ## Building
 
 `go build`
@@ -41,8 +64,8 @@ The server communicates over stdio using the MCP protocol.
 ## How it works
 
 The ithreemcp program is an MCP Server, allowing MCP clients to interact with the running i3 window manager.
-The ithreemcp program uses the [MCP Go SDK](github.com/modelcontextprotocol/go-sdk/mcp) to construct the MCP Server wrapping the functionality.
-The ithreemcp program uses the [go-i3](go.i3wm.org/i3/v4) library to communicate with the i3 window manager using its IPC interface.
+The ithreemcp program uses the [MCP Go SDK](https://github.com/modelcontextprotocol/go-sdk) to construct the MCP Server wrapping the functionality.
+The ithreemcp program uses the [go-i3](https://go.i3wm.org/i3/v4) library to communicate with the i3 window manager using its IPC interface.
 
 ## Supported Operations
 
@@ -144,3 +167,7 @@ This is useful when targeting windows by class, but `FindWindows` is preferred w
 - Get information about which windows match before acting
 - Handle multiple matches individually
 - Confirm the target window with the user
+
+## License
+
+Apache License 2.0 - see [LICENSE](LICENSE) for details.
