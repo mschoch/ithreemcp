@@ -4,6 +4,8 @@ An MCP server exposing functionality of the connected i3 window manager.
 
 Control your i3 windows using natural language through AI assistants. Ask your LLM to move windows between workspaces, focus applications, toggle floating mode, and more.
 
+![ithreemcp demo](demo.gif)
+
 ## Requirements
 
 - [i3 window manager](https://i3wm.org/) running with socket access
