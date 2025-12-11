@@ -60,12 +60,13 @@ type RunCommandOut struct {
 	Results []CommandResult `json:"results"`
 }
 
-// New creates a new i3MCPServer. If client is nil, uses the real i3 IPC.
-func New(client I3Client) (*i3MCPServer, error) {
-	if client == nil {
-		client = &defaultI3Client{}
-	}
+// NewServer creates a new i3MCPServer using the real i3 IPC.
+func NewServer() (*i3MCPServer, error) {
+	return NewServerWithClient(&defaultI3Client{})
+}
 
+// NewServerWithClient creates a new i3MCPServer with a custom I3Client.
+func NewServerWithClient(client I3Client) (*i3MCPServer, error) {
 	// Check the version to find problems early
 	_, err := client.GetVersion()
 	if err != nil {

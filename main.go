@@ -9,7 +9,7 @@ import (
 
 func main() {
 	// Create a new i3 MCP server
-	srv, err := New(nil)
+	srv, err := NewServer()
 	if err != nil {
 		log.Fatalf("Failed to create i3 MCP server: %v", err)
 	}
