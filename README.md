@@ -1,7 +1,6 @@
 # ithreemcp
 
 [![Tests](https://github.com/mschoch/ithreemcp/actions/workflows/test.yml/badge.svg)](https://github.com/mschoch/ithreemcp/actions/workflows/test.yml)
-[![Go Reference](https://pkg.go.dev/badge/github.com/mschoch/ithreemcp.svg)](https://pkg.go.dev/github.com/mschoch/ithreemcp)
 
 An MCP server exposing functionality of the connected i3 window manager.
 
