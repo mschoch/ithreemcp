@@ -7,7 +7,7 @@ Control your i3 windows using natural language through AI assistants. Ask your L
 ## Requirements
 
 - [i3 window manager](https://i3wm.org/) running with socket access
-- Go 1.25+ (for building from source)
+- Go 1.23+ (for building from source)
 
 ## Installation
 
