@@ -67,7 +67,7 @@ The server communicates over stdio using the MCP protocol.
 
 The ithreemcp program is an MCP Server, allowing MCP clients to interact with the running i3 window manager.
 The ithreemcp program uses the [MCP Go SDK](https://github.com/modelcontextprotocol/go-sdk) to construct the MCP Server wrapping the functionality.
-The ithreemcp program uses the [go-i3](https://go.i3wm.org/i3/v4) library to communicate with the i3 window manager using its IPC interface.
+The ithreemcp program uses the [go-i3](https://github.com/i3/go-i3) library to communicate with the i3 window manager using its IPC interface.
 
 ## Supported Operations
 
