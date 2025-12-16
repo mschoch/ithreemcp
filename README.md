@@ -8,6 +8,8 @@ Control your i3 windows using natural language through AI assistants. Ask your L
 
 ![ithreemcp demo](demo.gif)
 
+Read the [blog post](https://hexeditreality.com/posts/make-the-eyes-go-away/) about how this project came together.
+
 ## Requirements
 
 - [i3 window manager](https://i3wm.org/) running with socket access
