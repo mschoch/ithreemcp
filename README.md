@@ -67,6 +67,23 @@ If you're integrating with a different MCP client, you can run the server direct
 
 The server communicates over stdio using the MCP protocol.
 
+### Debug Logging
+
+To observe MCP request/response traffic (useful for learning about the MCP protocol), use the `--debug` flag:
+
+```bash
+./ithreemcp --debug /tmp/mcp-debug.log
+```
+
+This logs all JSON-RPC messages to the specified file:
+
+```
+read: {"jsonrpc":"2.0","id":1,"method":"initialize","params":{...}}
+write: {"jsonrpc":"2.0","id":1,"result":{...}}
+read: {"jsonrpc":"2.0","method":"tools/call","params":{"name":"GetWorkspaces"}}
+write: {"jsonrpc":"2.0","result":{...}}
+```
+
 ## How it works
 
 The ithreemcp program is an MCP Server, allowing MCP clients to interact with the running i3 window manager.
