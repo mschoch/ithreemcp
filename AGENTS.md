@@ -7,6 +7,7 @@
 ```bash
 go build          # Build the binary
 go test ./...     # Run all tests
+golangci-lint run # Run linter
 ```
 
 Tests use a mock i3 client and do not require a running i3 instance.
