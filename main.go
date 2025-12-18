@@ -35,7 +35,7 @@ func main() {
 		if err != nil {
 			log.Fatalf("Failed to open debug log file: %v", err)
 		}
-		defer debugFile.Close()
+		defer func() { _ = debugFile.Close() }()
 		transport = &mcp.LoggingTransport{
 			Transport: transport,
 			Writer:    debugFile,
